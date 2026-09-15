@@ -55,3 +55,7 @@ npm run dev
 Dependencies are pinned in `backend/requirements.lock` and `frontend/package-lock.json`. GitHub Actions runs backend checks, frontend checks, and a real Compose startup/dependency outage/recovery check.
 
 See [verification and delivery status](docs/sprint-4.7.md) for observed outcomes and pending work.
+
+## Production settings baseline
+
+`config.production` adds strict environment validation and HTTPS/security settings. It is opt-in and is not a ready-to-deploy infrastructure definition. See [Task 2 deployment notes](docs/sprint-4.7.md#task-2-production-settings-baseline) for required configuration and remaining TLS/proxy gates.

@@ -53,3 +53,19 @@ Each increment must be verified before being reported complete. Task 1 CI is an 
 - Host HTTP smoke check: failed with connection refused after the Docker engine became unavailable. The follow-up Docker command could not find the engine pipe. Redis outage/recovery was not reached locally; CI includes this check and must confirm it.
 - Full appraisal workflow, RBAC, browser journeys, migrations for domain models and production readiness: not implemented or claimed tested.
 - The implementation subagent hit an account usage limit before final review. The primary agent inspected the resulting files and ran the checks above; an independent reviewer was not available.
+
+## Task 1 CI confirmation
+
+GitHub Actions run [34927210064](https://github.com/ws-buntu/staff-appraisal/actions/runs/34927210064) for commit `ab643c7` completed successfully. Backend, frontend and Compose jobs all passed, including real HTTP, Redis outage (503 readiness with live process) and recovery. This supplies the independent Linux environment check that local Docker instability prevented.
+
+## Task 2: production settings baseline
+
+Select `DJANGO_SETTINGS_MODULE=config.production` explicitly in a deployment. Local Compose continues to use the development/CI foundation settings.
+
+The production module rejects weak/missing secrets, absent or wildcard allowed hosts and enabled debug mode. It enables HTTPS redirects, secure cookies, CSRF middleware and security headers. It does not trust forwarded proxy headers automatically. Configure the trusted TLS termination path before deployment; otherwise an HTTP upstream behind a proxy would redirect repeatedly.
+
+Required environment: generated `DJANGO_SECRET_KEY` (at least 50 characters), `DJANGO_ALLOWED_HOSTS` containing actual hostnames, `POSTGRES_PASSWORD`, `DJANGO_DEBUG=false`. Configure database/Redis connectivity as in the baseline. If cross-origin unsafe browser requests are intentionally supported, list HTTPS origins in `DJANGO_CSRF_TRUSTED_ORIGINS`.
+
+HSTS stays disabled until HTTPS is verified. Then configure `DJANGO_HSTS_SECONDS`; `DJANGO_HSTS_INCLUDE_SUBDOMAINS` and `DJANGO_HSTS_PRELOAD` are separate opt-ins requiring domain-wide readiness. Django's deployment checks intentionally warn while those options are disabled. The fully configured test fixture enables them only for an illustrative test domain; it does not alter a real domain.
+
+Verification: five configuration tests were executed and failed before the production module existed. After implementation, the full backend suite passed 10 tests, including configuration rejection, `manage.py check --deploy --fail-level WARNING` for an explicitly configured fixture, HTTPS redirection and response security headers. Ruff lint passed. No production endpoint or TLS certificate has been deployed or verified.
