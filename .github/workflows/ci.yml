@@ -7,6 +7,18 @@ permissions:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: appraisal
+          POSTGRES_USER: appraisal
+          POSTGRES_PASSWORD: ci-only-not-a-production-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U appraisal -d appraisal"
+          --health-interval 5s --health-timeout 3s --health-retries 20
     env:
       DJANGO_SECRET_KEY: ci-only-not-a-production-secret
       POSTGRES_PASSWORD: ci-only-not-a-production-password
@@ -18,9 +30,13 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.lock
       - run: pip install -r backend/requirements.lock
-      - run: python -m ruff check backend
-      - run: python -m ruff format --check backend
+      - run: python -m ruff check backend infrastructure
+      - run: python -m ruff format --check backend infrastructure
       - run: python manage.py check
+        working-directory: backend
+      - run: python manage.py makemigrations --check --dry-run
+        working-directory: backend
+      - run: python manage.py migrate --noinput
         working-directory: backend
       - run: python -m pytest -q
         working-directory: backend
@@ -54,6 +70,13 @@ jobs:
           PY
       - run: docker compose config --quiet
       - run: docker compose up --build -d --wait --wait-timeout 240
+      - name: Verify database migrations and backend regression suite
+        run: |
+          docker compose exec -T backend python manage.py makemigrations --check --dry-run
+          docker compose exec -T backend python manage.py migrate --check
+          docker compose exec -T backend python -m pytest -q -p no:cacheprovider
+      - name: Verify authentication over HTTP with PostgreSQL and Redis
+        run: docker compose exec -T backend python < infrastructure/check_auth.py
       - name: Verify real HTTP endpoints and dependency failure recovery
         run: |
           curl --fail http://localhost:3000/ | grep -q 'Staff Appraisal'

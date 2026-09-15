@@ -22,9 +22,10 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
-  backend:
+  migrate:
     build: ./backend
-    environment:
+    command: [python, manage.py, migrate, --noinput]
+    environment: &backend_environment
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env}
       DJANGO_DEBUG: 'false'
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend
@@ -33,9 +34,18 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_HOST: postgres
       REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+  backend:
+    build: ./backend
+    environment: *backend_environment
     ports:
       - '127.0.0.1:${BACKEND_PORT:-8000}:8000'
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:

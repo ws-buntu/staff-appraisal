@@ -4,7 +4,7 @@
 
 Implemented Django/DRF liveness and dependency readiness endpoints, a Next.js TypeScript landing page, locked dependencies, PostgreSQL/Redis persistent volumes, non-root application containers, loopback-only HTTP ports, and GitHub Actions foundation checks.
 
-No employee records, authentication, appraisal workflow, scoring, or promotion automation exist yet. This is a runnable foundation, not the complete appraisal system or a production deployment.
+At Task 1, no employee records, authentication, appraisal workflow, scoring, or promotion automation existed. This is a runnable foundation, not the complete appraisal system or a production deployment.
 
 ### Verification executed on 2026-09-15
 
@@ -23,10 +23,10 @@ The user supplied `Performance_Appraisal_form_MANUAL (1).pdf`, a 12-page manual.
 
 Do not treat the manual's printed equation as proof that an arbitrary implementation of M, N and O is correct. Final aggregation remains disabled until the form's indicator weights, missing-item rules, rounding/boundaries and worked examples are reconciled. No overall formula or automated promotion threshold was implemented. The local source PDF and full extracted text are not published to the repository.
 
-## Remaining plan
+## Implementation plan
 
-2. Production settings and deployment checks.
-3. User, roles and authentication.
+2. Production settings and deployment checks (baseline complete; actual deployment pending).
+3. User, roles and authentication (current increment).
 4. Department and employee domain.
 5. Performance planning and KRA constraints.
 6. Mid-year target and competency review.
@@ -69,3 +69,24 @@ Required environment: generated `DJANGO_SECRET_KEY` (at least 50 characters), `D
 HSTS stays disabled until HTTPS is verified. Then configure `DJANGO_HSTS_SECONDS`; `DJANGO_HSTS_INCLUDE_SUBDOMAINS` and `DJANGO_HSTS_PRELOAD` are separate opt-ins requiring domain-wide readiness. Django's deployment checks intentionally warn while those options are disabled. The fully configured test fixture enables them only for an illustrative test domain; it does not alter a real domain.
 
 Verification: five configuration tests were executed and failed before the production module existed. After implementation, the full backend suite passed 10 tests, including configuration rejection, `manage.py check --deploy --fail-level WARNING` for an explicitly configured fixture, HTTPS redirection and response security headers. Ruff lint passed. No production endpoint or TLS certificate has been deployed or verified.
+
+## Task 3: backend users, roles and authentication
+
+Implemented UUID Django users with PostgreSQL-constrained roles; default EMPLOYEE and distinct Django administrative flags. Added login, refresh, logout and read-only current-user endpoints. There is no public registration or role-edit endpoint. Access tokens last 10 minutes; refresh tokens last 8 hours and rotate under a PostgreSQL row lock. The same lock serializes logout against rotation. Deactivation, deletion and password changes invalidate authentication/refresh. Responses are marked non-cacheable. Redis-backed login/refresh throttling ignores untrusted forwarded IP headers.
+
+Compose now runs migrations as a separate prerequisite before backend startup. CI includes PostgreSQL 17 migrations, drift checks, the backend suite and a disposable real HTTP authentication check with Redis. The overall-score safeguard remains unchanged. The frontend account flow remains pending.
+
+Local verification on 2026-09-15:
+
+- Django `check`: no issues.
+- `makemigrations --check --dry-run`: no changes detected.
+- `migrate --noinput`: account/auth/content-type/blacklist migrations applied successfully to an isolated PostgreSQL 18.4 database.
+- Full backend `pytest -q -p no:cacheprovider`: **30 passed**.
+- Ruff lint and format checks across backend/infrastructure: passed.
+- `docker compose config --quiet`: passed. The local Docker engine remained unavailable; actual Linux/Redis/container HTTP execution awaits CI for this commit.
+
+Regression tests cover successful and rejected login, default/current roles, database role constraints, malformed/expired tokens, refresh replay/concurrent rotation, logout ownership, password changes, deactivation/deletion, response cache headers, forwarded-header throttle bypass and role/flag injection. The implementation worker hit a usage limit during final follow-up; the primary inspected the saved code and completed verification.
+
+See [authentication operating limits](authentication.md) for access-token expiry after logout, sliding refresh lifetime, trusted-proxy configuration and later browser/session requirements. This increment is not a complete appraisal system or production deployment.
+
+Final read-only review found no blocking correctness/security issues. Its minor recommendation to exercise the real Redis quota was added to the CI HTTP smoke check: the fifth shared login/refresh attempt is allowed and the sixth returns 429.
