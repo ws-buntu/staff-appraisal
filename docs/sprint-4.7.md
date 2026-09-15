@@ -26,8 +26,8 @@ Do not treat the manual's printed equation as proof that an arbitrary implementa
 ## Implementation plan
 
 2. Production settings and deployment checks (baseline complete; actual deployment pending).
-3. User, roles and authentication (current increment).
-4. Department and employee domain.
+3. User, roles and authentication (complete; CI run 34948468038 passed).
+4. Department and employee domain (current increment).
 5. Performance planning and KRA constraints.
 6. Mid-year target and competency review.
 7. End-year target assessment.
@@ -90,3 +90,19 @@ Regression tests cover successful and rejected login, default/current roles, dat
 See [authentication operating limits](authentication.md) for access-token expiry after logout, sliding refresh lifetime, trusted-proxy configuration and later browser/session requirements. This increment is not a complete appraisal system or production deployment.
 
 Final read-only review found no blocking correctness/security issues. Its minor recommendation to exercise the real Redis quota was added to the CI HTTP smoke check: the fifth shared login/refresh attempt is allowed and the sixth returns 429.
+
+## Task 4: departments and employee records
+
+Added UUID Department and Employee records, protected account/department/appraiser relationships, unique codes/names/staff identifiers, immutable API account binding and active-appraiser validation. HR/ADMIN manage records; employee, appraiser and HOD read scopes are derived from current database relationships. Responses are paginated and non-cacheable; out-of-scope detail requests return 404. No hard-delete endpoint exists. Directory archival is separate from login deactivation.
+
+Verification on 2026-09-15:
+
+- Baseline: 30 backend tests passed. New domain tests initially failed before the module existed.
+- Final full PostgreSQL 18.4 suite: **56 tests passed**, including 26 directory regressions.
+- Django checks, migration drift check and pending-migration check: clean; `employees.0001_initial` applied successfully.
+- Ruff lint/format and Git whitespace checks: passed.
+- Real local HTTP smoke: HR creates departments/employees; employee/appraiser/HOD scope checks, unauthorized writes, immutable ownership, no-store headers, no-delete behavior and appraiser removal all passed.
+- Read-only review found no blocking issues. Its archival-access test recommendation was added and reviewed: actual JWT authentication still allows an archived employee's own record while denying another employee's record.
+- CI adds the same HTTP directory check to the PostgreSQL 17/Redis container job. The final GitHub Actions result is checked after publication.
+
+No production accounts, employee data or appraisal results were introduced. The browser directory, appraisal workflow, audit history and overall-score engine remain pending. See [directory API documentation](employees.md).

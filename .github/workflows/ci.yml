@@ -77,6 +77,8 @@ jobs:
           docker compose exec -T backend python -m pytest -q -p no:cacheprovider
       - name: Verify authentication over HTTP with PostgreSQL and Redis
         run: docker compose exec -T backend python < infrastructure/check_auth.py
+      - name: Verify employee directory permissions over HTTP
+        run: docker compose exec -T backend python < infrastructure/check_employees.py
       - name: Verify real HTTP endpoints and dependency failure recovery
         run: |
           curl --fail http://localhost:3000/ | grep -q 'Staff Appraisal'

@@ -4,7 +4,7 @@ Staff Performance Planning, Review and Appraisal system.
 
 ## Current scope
 
-Sprint 4.7 Tasks 1-3: application/Docker foundation, production-settings guardrails and backend account authentication. Next.js/TypeScript frontend, Django REST Framework backend, PostgreSQL and Redis. Django will own appraisal rules, workflow, permissions and calculations. Backend account authentication is available; appraisal domain features and browser sign-in are not implemented yet. The landing page contains no sample staff records or invented results.
+Sprint 4.7 Tasks 1-4: application/Docker foundation, production-settings guardrails, backend account authentication, departments and employee records. Next.js/TypeScript frontend, Django REST Framework backend, PostgreSQL and Redis. Django will own appraisal rules, workflow, permissions and calculations. Backend authentication and the department/employee directory are available; appraisal workflow and browser sign-in remain pending. The landing page contains no sample staff records or invented results.
 
 **Scoring safeguard:** final overall-score aggregation remains unresolved. Do not infer a T-to-Z formula, publish a calculated overall rating, or automate promotion decisions without authoritative guidance and verified fixtures.
 
@@ -64,3 +64,8 @@ See [verification and delivery status](docs/sprint-4.7.md) for observed outcomes
 ## Backend accounts
 
 See [authentication endpoints and operating limits](docs/authentication.md). Compose now applies account/token migrations before backend startup. No default accounts or passwords are created. The browser sign-in flow will be added in a later increment.
+
+
+## Departments and employees
+
+The [directory API](docs/employees.md) provides HR-managed employee records with role-based read scopes, pagination and protected account relationships. There is no hard-delete endpoint and no seeded staff data.
